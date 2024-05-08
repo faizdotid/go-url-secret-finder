@@ -106,7 +106,7 @@ func (scanner *URLScanner) ScanURLAndMatch(url string) {
 	if len(matches) > 0 {
 		fmt.Printf("%s%s %s->%s [%s%s%s]%s\n", White, url, Blue, White, Green, strings.Join(matches, ", "), White, Reset)
 	} else {
-		fmt.Printf("%s%s %s->%s %sNo matches%s\n", White, url, Blue, White, Red, Reset)
+		fmt.Printf("%s%s %s->%s [%s%s%s]%s\n", White, url, Blue, White, Red, "No matches", White, Reset)
 	}
 }
 
@@ -132,11 +132,8 @@ func ParseArgsFunc(args *ParserArg) {
 }
 
 func main() {
-
 	var args ParserArg
-
 	ParseArgsFunc(&args)
-
 	configs := LoadScanConfigs()
 	scanner := URLScanner{
 		Configs: configs,
