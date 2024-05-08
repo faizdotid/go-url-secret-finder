@@ -1,0 +1,47 @@
+[
+    {
+        "name": "AWS Access Key ID",
+        "regex": "AKIA[0-9A-Z]{16}",
+        "outfile": "aws-keys.txt"
+    },
+    {
+        "name": "DB Credentials",
+        "regex": "DB_PASS|db_pass|DATABASE_PASSWORD|database_password",
+        "outfile": "db-credentials.txt"
+    },
+    {
+        "name": "AWS SMTP",
+        "regex": "email-smtp.",
+        "outfile": "aws-smtps.txt"
+    },
+    {
+        "name": "Aliyun Access Key ID",
+        "regex": "LTAI[A-Za-z0-9]{16,}",
+        "outfile": "aliyun-keys.txt"
+    },
+    {
+        "name": "Twilio API Key",
+        "regex": "account_sid|ACCOUNT_SID|twilio_sid|TWILIO_SID",
+        "outfile": "twilio-keys.txt"
+    },
+    {
+        "name": "Plivo API Key",
+        "regex": "PLIVO_|plivo_",
+        "outfile": "plivo-keys.txt"
+    },
+    {
+        "name": "Nexmo API Key",
+        "regex": "NEXMO_|nexmo_|VONAGE_|vonage_",
+        "outfile": "nexmo-keys.txt"
+    },
+    {
+        "name": "SendGrid API Key",
+        "regex": "SG\\.[0-9a-zA-Z]{22}\\.[0-9a-zA-Z]{43}",
+        "outfile": "sendgrid-keys.txt"
+    },
+    {
+        "name": "Stripe API Key",
+        "regex": "sk_live_[0-9a-zA-Z]{24}",
+        "outfile": "stripe-keys.txt"
+    }
+]
