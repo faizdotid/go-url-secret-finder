@@ -7,3 +7,4 @@
 - `-list` List containing of your **urls**
 - `-thread` Your threads (default **10**)
 - `-timeout` Timeout request to sites (default **10**)
+- `-verbose` Print output into terminal
