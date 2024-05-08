@@ -23,13 +23,26 @@ type ScanConfig struct {
 type URLScanner struct {
 	Configs []ScanConfig
 	Client  *http.Client
+	Verbose bool
 }
 
 type ParserArg struct {
 	FileName string
 	Threads  int
 	Timeout  int
+	Verbose  bool
 }
+
+type Color string
+
+const (
+	Red    Color = "\033[31m"
+	Green  Color = "\033[32m"
+	Yellow Color = "\033[33m"
+	Blue   Color = "\033[34m"
+	White  Color = "\033[37m"
+	Reset  Color = "\033[0m"
+)
 
 func LoadScanConfigs() []ScanConfig {
 	configRead, err := os.ReadFile("config.json")
@@ -87,10 +100,13 @@ func (scanner *URLScanner) ScanURLAndMatch(url string) {
 	for _, config := range scanner.Configs {
 		scanner.MatchAndRecordURL(config, &matches, body, url)
 	}
+	if !scanner.Verbose {
+		return
+	}
 	if len(matches) > 0 {
-		fmt.Printf("%s -> [%s]\n", url, strings.Join(matches, " | "))
+		fmt.Printf("%s%s %s->%s [%s%s%s]%s\n", White, url, Blue, White, Green, strings.Join(matches, ", "), White, Reset)
 	} else {
-		fmt.Printf("%s -> [No matches]\n", url)
+		fmt.Printf("%s%s %s->%s %sNo matches%s\n", White, url, Blue, White, Red, Reset)
 	}
 }
 
@@ -98,6 +114,7 @@ func ParseArgsFunc(args *ParserArg) {
 	flag.StringVar(&args.FileName, "list", "", "File containing list of URLs")
 	flag.IntVar(&args.Threads, "threads", 10, "Number of threads to use")
 	flag.IntVar(&args.Timeout, "timeout", 10, "Timeout for HTTP requests")
+	flag.BoolVar(&args.Verbose, "verbose", false, "Print verbose output")
 	flag.Parse()
 	if args.FileName == "" {
 		fmt.Printf("Usage: %s -list <file> [-threads <threads>] [-timeout <timeout>]\n", os.Args[0])
@@ -115,27 +132,10 @@ func ParseArgsFunc(args *ParserArg) {
 }
 
 func main() {
-	
+
 	var args ParserArg
 
 	ParseArgsFunc(&args)
-	
-	// var threads int
-	// if len(os.Args) < 2 {
-	// 	fmt.Println("Usage: go run main.go <file> [threads]")
-	// 	os.Exit(1)
-	// } else {
-	// 	if _, err := os.Stat(os.Args[1]); err != nil {
-	// 		fmt.Println("File not found:", err)
-	// 		os.Exit(1)
-	// 	}
-
-	// }
-	// if len(os.Args) == 3 {
-	// 	threads, _ = strconv.Atoi(os.Args[2])
-	// } else {
-	// 	threads = 10
-	// }
 
 	configs := LoadScanConfigs()
 	scanner := URLScanner{
@@ -148,6 +148,7 @@ func main() {
 				},
 			},
 		},
+		Verbose: args.Verbose,
 	}
 	if _, err := os.Stat("results"); os.IsNotExist(err) {
 		os.Mkdir("results", 0755)
