@@ -3,5 +3,5 @@
         "name": "AWS Access Key ID",
         "regex": "AKIA[0-9A-Z]{16}",
         "outfile": "aws-keys.txt"
-    },
+    }
 ]
