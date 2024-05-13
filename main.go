@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"runtime"
 )
 
 type ScanConfig struct {
@@ -24,6 +25,7 @@ type URLScanner struct {
 	Configs []ScanConfig
 	Client  *http.Client
 	Verbose bool
+	Match bool
 }
 
 type ParserArg struct {
@@ -31,6 +33,7 @@ type ParserArg struct {
 	Threads  int
 	Timeout  int
 	Verbose  bool
+	Match  bool
 }
 
 type Color string
@@ -60,52 +63,56 @@ func LoadScanConfigs() []ScanConfig {
 	return config
 }
 
-func (scanner *URLScanner) MatchAndRecordURL(config ScanConfig, matches *[]string, body []byte, url string) {
-	matched, err := regexp.Match(config.Regex, body)
+func (s *URLScanner) MatchAndRecordURL(c ScanConfig, matches *[]string, body []byte, url string) {
+	matched, err := regexp.Match(c.Regex, body)
 	if err != nil {
-		fmt.Println("Error matching regex:", err)
+		s.PrintError(url, err)
 		return
 	}
 	if !matched {
 		return
 	}
-	*matches = append(*matches, config.Name)
-	file, err := os.OpenFile(fmt.Sprintf("results/%s", config.Outfile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	*matches = append(*matches, c.Name)
+	file, err := os.OpenFile(fmt.Sprintf("results/%s", c.Outfile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Error opening file:", err)
+		s.PrintError(url, err)
 		return
 	}
 	defer file.Close()
 	_, err = file.WriteString(url + "\n")
 	if err != nil {
-		fmt.Println("Error writing to file:", err)
+		s.PrintError(url, err)
 		return
 	}
 }
 
-func (scanner *URLScanner) ScanURLAndMatch(url string) {
+func (s *URLScanner) PrintError(url string, err error) {
+	if s.Verbose {
+		fmt.Printf("%s%s %s->%s [%s%s%s]%s\n", White, url, Blue, White, Yellow, err.Error(), White, Reset)
+	}
+}
+
+func (s *URLScanner) ScanURLAndMatch(url string) {
 	url = strings.TrimSpace(url)
-	response, err := scanner.Client.Get(url)
+	response, err := s.Client.Get(url)
 	if err != nil {
-		fmt.Println("Error fetching URL:", err)
+		s.PrintError(url, err)
 		return
 	}
 	defer response.Body.Close()
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		fmt.Println("Error reading response body:", err)
+		s.PrintError(url, err)
 		return
 	}
 	var matches []string
-	for _, config := range scanner.Configs {
-		scanner.MatchAndRecordURL(config, &matches, body, url)
+	for _, config := range s.Configs {
+		s.MatchAndRecordURL(config, &matches, body, url)
 	}
-	if !scanner.Verbose {
-		return
-	}
-	if len(matches) > 0 {
+	if len(matches) != 0 {
 		fmt.Printf("%s%s %s->%s [%s%s%s]%s\n", White, url, Blue, White, Green, strings.Join(matches, ", "), White, Reset)
-	} else {
+	}
+	if len(matches) == 0 && !s.Match {
 		fmt.Printf("%s%s %s->%s [%s%s%s]%s\n", White, url, Blue, White, Red, "No matches", White, Reset)
 	}
 }
@@ -115,9 +122,10 @@ func ParseArgsFunc(args *ParserArg) {
 	flag.IntVar(&args.Threads, "threads", 10, "Number of threads to use")
 	flag.IntVar(&args.Timeout, "timeout", 10, "Timeout for HTTP requests")
 	flag.BoolVar(&args.Verbose, "verbose", false, "Print verbose output")
+	flag.BoolVar(&args.Match, "match", false, "Print only match url")
 	flag.Parse()
 	if args.FileName == "" {
-		fmt.Printf("Usage: %s -list <file> [-threads <threads>] [-timeout <timeout>]\n", os.Args[0])
+		fmt.Printf("Usage: %s -list <file> [-threads <threads>] [-timeout <timeout>] [-verbose] [-matched]\n", os.Args[0])
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -132,6 +140,7 @@ func ParseArgsFunc(args *ParserArg) {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	var args ParserArg
 	ParseArgsFunc(&args)
 	configs := LoadScanConfigs()
@@ -146,6 +155,7 @@ func main() {
 			},
 		},
 		Verbose: args.Verbose,
+		Match: args.Match,
 	}
 	if _, err := os.Stat("results"); os.IsNotExist(err) {
 		os.Mkdir("results", 0755)
