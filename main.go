@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
-	"runtime"
 )
 
 type ScanConfig struct {
@@ -25,7 +25,7 @@ type URLScanner struct {
 	Configs []ScanConfig
 	Client  *http.Client
 	Verbose bool
-	Match bool
+	Match   bool
 }
 
 type ParserArg struct {
@@ -33,7 +33,7 @@ type ParserArg struct {
 	Threads  int
 	Timeout  int
 	Verbose  bool
-	Match  bool
+	Match    bool
 }
 
 type Color string
@@ -63,8 +63,8 @@ func LoadScanConfigs() []ScanConfig {
 	return config
 }
 
-func (s *URLScanner) MatchAndRecordURL(c ScanConfig, matches *[]string, body []byte, url string) {
-	matched, err := regexp.Match(c.Regex, body)
+func (s *URLScanner) MatchAndRecordURL(c ScanConfig, matches *[]string, body string, url string) {
+	matched, err := regexp.MatchString(c.Regex, body)
 	if err != nil {
 		s.PrintError(url, err)
 		return
@@ -73,7 +73,11 @@ func (s *URLScanner) MatchAndRecordURL(c ScanConfig, matches *[]string, body []b
 		return
 	}
 	*matches = append(*matches, c.Name)
-	file, err := os.OpenFile(fmt.Sprintf("results/%s", c.Outfile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(
+		fmt.Sprintf("results/%s", c.Outfile),
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY,
+		0644,
+	)
 	if err != nil {
 		s.PrintError(url, err)
 		return
@@ -107,7 +111,12 @@ func (s *URLScanner) ScanURLAndMatch(url string) {
 	}
 	var matches []string
 	for _, config := range s.Configs {
-		s.MatchAndRecordURL(config, &matches, body, url)
+		s.MatchAndRecordURL(
+			config,
+			&matches,
+			string(body),
+			url,
+		)
 	}
 	if len(matches) != 0 {
 		fmt.Printf("%s%s %s->%s [%s%s%s]%s\n", White, url, Blue, White, Green, strings.Join(matches, ", "), White, Reset)
@@ -155,7 +164,7 @@ func main() {
 			},
 		},
 		Verbose: args.Verbose,
-		Match: args.Match,
+		Match:   args.Match,
 	}
 	if _, err := os.Stat("results"); os.IsNotExist(err) {
 		os.Mkdir("results", 0755)
