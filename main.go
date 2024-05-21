@@ -134,7 +134,7 @@ func ParseArgsFunc(args *ParserArg) {
 	flag.BoolVar(&args.Match, "match", false, "Print only match url")
 	flag.Parse()
 	if args.FileName == "" {
-		fmt.Printf("Usage: %s -list <file> [-threads <threads>] [-timeout <timeout>] [-verbose] [-matched]\n", os.Args[0])
+		fmt.Printf("Usage: %s -list <file> [-threads <threads>] [-timeout <timeout>] [-verbose] [-match]\n", os.Args[0])
 		flag.Usage()
 		os.Exit(1)
 	}
